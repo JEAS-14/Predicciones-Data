@@ -5,13 +5,13 @@ import plotly.express as px
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
-    page_title="Sales Predictor AI",
-    page_icon="📈",
+    page_title="Predicción de Ventas AI",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS PERSONALIZADOS (Para darle el toque moderno) ---
+# --- ESTILOS CSS PERSONALIZADOS ---
 st.markdown("""
     <style>
     .big-font { font-size:50px !important; font-weight: bold; color: #4CAF50; }
@@ -21,21 +21,22 @@ st.markdown("""
 
 # --- TÍTULO PRINCIPAL ---
 st.title("📊 Predicción de Ventas con IA")
-st.markdown("Optimiza tu presupuesto de marketing usando **Machine Learning**.")
+st.markdown("Optimiza tu presupuesto de marketing usando **Machine Learning** (Random Forest).")
 st.markdown("---")
 
 # --- CARGAR MODELO ---
 @st.cache_resource
 def load_model():
     try:
-        return joblib.load('modelo_ventas.joblib')
-    except:
+        # CORRECCIÓN: Usamos el nombre exacto de tu archivo en el repo
+        return joblib.load('modelo_publicidad_rf.joblib')
+    except FileNotFoundError:
         return None
 
 model = load_model()
 
 if model is None:
-    st.error("⚠️ Error: No se encontró el archivo 'modelo_ventas.joblib'. Por favor súbelo a tu repositorio.")
+    st.error("⚠️ Error Crítico: No se encontró el archivo `modelo_publicidad_rf.joblib`. Por favor verifica que esté subido en el repositorio.")
     st.stop()
 
 # --- SIDEBAR (Entradas) ---
@@ -43,70 +44,62 @@ with st.sidebar:
     st.header("🎛️ Panel de Control")
     st.write("Ajusta tu inversión en publicidad (x $1000):")
     
-    tv = st.slider("📺 TV", 0, 300, 150)
-    radio = st.slider("📻 Radio", 0, 50, 20)
-    diario = st.slider("📰 Diario", 0, 100, 10)
+    # Sliders para hacer la interacción más dinámica
+    tv = st.slider("📺 TV", 0.0, 300.0, 150.0)
+    radio = st.slider("📻 Radio", 0.0, 50.0, 20.0)
+    diario = st.slider("📰 Diario", 0.0, 100.0, 10.0)
     
     st.markdown("---")
-    st.caption("Desarrollado por JEAS-14")
+    if st.button("🔄 Resetear Valores"):
+        st.rerun()
 
 # --- LÓGICA DE PREDICCIÓN ---
+# Crear el DataFrame con los nombres de columnas exactos que usó el modelo al entrenarse
 input_data = pd.DataFrame([[tv, radio, diario]], columns=['TV', 'Radio', 'Diario'])
 prediccion = model.predict(input_data)[0]
 
 # --- DASHBOARD PRINCIPAL (Columnas) ---
-col1, col2 = st.columns([1, 2])
+col1, col2 = st.columns([1, 1.5], gap="large")
 
 with col1:
-    # 1. Métrica Principal (El número grande)
-    st.subheader("🎯 Ventas Estimadas")
+    st.subheader("🎯 Resultados")
+    # Muestra el número grande
     st.markdown(f'<p class="big-font">{prediccion:.2f} k</p>', unsafe_allow_html=True)
+    st.caption("Unidades de venta estimadas")
     
-    # Semáforo de rendimiento
+    # Semáforo de rendimiento con mensajes condicionales
     if prediccion > 20:
-        st.success("¡Excelente Proyección! 🚀")
-    elif prediccion > 10:
-        st.warning("Rendimiento Moderado 😐")
+        st.success("🌟 **¡Excelente Proyección!** La estrategia parece muy efectiva.")
+    elif prediccion > 12:
+        st.info("✅ **Buen Rendimiento.** Estás en el camino correcto.")
     else:
-        st.error("Rendimiento Bajo 🔻")
+        st.warning("⚠️ **Rendimiento Bajo.** Considera aumentar la inversión en Radio o TV.")
     
-    st.write(f"Inversión Total: **${tv + radio + diario}**")
+    st.divider()
+    st.metric(label="Inversión Total", value=f"${tv + radio + diario:,.2f}")
 
 with col2:
-    # 2. Gráficos Modernos con Plotly
-    st.subheader("💡 Análisis de Inversión")
+    st.subheader("💡 Distribución del Presupuesto")
     
     # Preparamos los datos para el gráfico
     datos_grafico = pd.DataFrame({
-        'Medio': ['TV', 'Radio', 'Diario'],
+        'Canal': ['TV', 'Radio', 'Diario'],
         'Inversión': [tv, radio, diario],
-        'Color': ['#1f77b4', '#ff7f0e', '#2ca02c'] # Colores personalizados
+        'Color': ['#636EFA', '#EF553B', '#00CC96'] # Colores modernos de Plotly
     })
 
-    # CREAR GRÁFICO DE BARRAS DINÁMICO
-    fig = px.bar(
-        datos_grafico, 
-        x='Medio', 
-        y='Inversión', 
-        color='Medio',
-        text='Inversión',
-        title="Distribución del Presupuesto",
-        color_discrete_sequence=px.colors.qualitative.Pastel, # Paleta de colores moderna
-        template="plotly_white"
-    )
-    
-    fig.update_layout(showlegend=False) # Ocultar leyenda redundante
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- SECCIÓN INFERIOR (Detalle) ---
-with st.expander("Ver desglose detallado del presupuesto"):
-    # Gráfico de Dona (Pie Chart)
-    fig_pie = px.pie(
+    # GRÁFICO DE DONA INTERACTIVO (Más moderno que las barras simples)
+    fig = px.pie(
         datos_grafico, 
         values='Inversión', 
-        names='Medio', 
-        title='Porcentaje de Inversión por Canal',
-        hole=0.4, # Hace que sea una dona
-        color_discrete_sequence=px.colors.qualitative.Set3
+        names='Canal', 
+        hole=0.4,
+        color_discrete_sequence=px.colors.qualitative.Pastel
     )
-    st.plotly_chart(fig_pie, use_container_width=True)
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- SECCIÓN DE DETALLES ---
+with st.expander("📄 Ver Ficha Técnica de la Predicción"):
+    st.table(input_data)
+    st.write(f"**Modelo utilizado:** Random Forest Regressor")
