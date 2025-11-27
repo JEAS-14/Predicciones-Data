@@ -11,11 +11,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS PERSONALIZADOS ---
+# --- ESTILOS CSS PERSONALIZADOS (Limpios) ---
 st.markdown("""
     <style>
     .big-font { font-size:50px !important; font-weight: bold; color: #4CAF50; }
-    .stMetric { background-color: #f0f2f6; padding: 15px; border-radius: 10px; }
+    /* Eliminamos el estilo de .stMetric para que se vea bien siempre */
     </style>
 """, unsafe_allow_html=True)
 
@@ -28,7 +28,6 @@ st.markdown("---")
 @st.cache_resource
 def load_model():
     try:
-        # CORRECCIÓN: Usamos el nombre exacto de tu archivo en el repo
         return joblib.load('modelo_publicidad_rf.joblib')
     except FileNotFoundError:
         return None
@@ -44,7 +43,6 @@ with st.sidebar:
     st.header("🎛️ Panel de Control")
     st.write("Ajusta tu inversión en publicidad (x $1000):")
     
-    # Sliders para hacer la interacción más dinámica
     tv = st.slider("📺 TV", 0.0, 300.0, 150.0)
     radio = st.slider("📻 Radio", 0.0, 50.0, 20.0)
     diario = st.slider("📰 Diario", 0.0, 100.0, 10.0)
@@ -54,7 +52,6 @@ with st.sidebar:
         st.rerun()
 
 # --- LÓGICA DE PREDICCIÓN ---
-# Crear el DataFrame con los nombres de columnas exactos que usó el modelo al entrenarse
 input_data = pd.DataFrame([[tv, radio, diario]], columns=['TV', 'Radio', 'Diario'])
 prediccion = model.predict(input_data)[0]
 
@@ -63,11 +60,9 @@ col1, col2 = st.columns([1, 1.5], gap="large")
 
 with col1:
     st.subheader("🎯 Resultados")
-    # Muestra el número grande
     st.markdown(f'<p class="big-font">{prediccion:.2f} k</p>', unsafe_allow_html=True)
     st.caption("Unidades de venta estimadas")
     
-    # Semáforo de rendimiento con mensajes condicionales
     if prediccion > 20:
         st.success("🌟 **¡Excelente Proyección!** La estrategia parece muy efectiva.")
     elif prediccion > 12:
@@ -76,19 +71,18 @@ with col1:
         st.warning("⚠️ **Rendimiento Bajo.** Considera aumentar la inversión en Radio o TV.")
     
     st.divider()
+    
+    # Aquí se verá bien ahora:
     st.metric(label="Inversión Total", value=f"${tv + radio + diario:,.2f}")
 
 with col2:
     st.subheader("💡 Distribución del Presupuesto")
     
-    # Preparamos los datos para el gráfico
     datos_grafico = pd.DataFrame({
         'Canal': ['TV', 'Radio', 'Diario'],
-        'Inversión': [tv, radio, diario],
-        'Color': ['#636EFA', '#EF553B', '#00CC96'] # Colores modernos de Plotly
+        'Inversión': [tv, radio, diario]
     })
 
-    # GRÁFICO DE DONA INTERACTIVO (Más moderno que las barras simples)
     fig = px.pie(
         datos_grafico, 
         values='Inversión', 
