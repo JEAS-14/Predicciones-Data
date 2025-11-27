@@ -20,7 +20,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- TÍTULO PRINCIPAL ---
-st.title("📊 Predicción de Ventas con IA")
+st.title("📊 Predicción de Ventas")
 st.markdown("Optimiza tu presupuesto de marketing usando **Machine Learning** (Random Forest).")
 st.markdown("---")
 
